@@ -9,29 +9,67 @@ int power(int base, int exponent);
 
 int image_width = 0;
 int image_height = 0;
+int oFlag = 0;
+int tFlag = 0;
+int hFlag = 0;
 
-int main(int argc, char const *argv[]) {
+
+int main(int argc, char *argv[]) {
 	/* code */
+	int i;
+	int pos;
+	char output_file_name[1000];
+	float threshold_value;
+	FILE *input_image;
 
 	//parse the main arguments and call related functions.
+	for (i = 1; i < argc && argv[i][0] == '-'; i++) {
+        switch (argv[i][1]) {
+        case 'o': 
+        	for ( pos = 0; argv[i+1][pos] != '\0'; pos++) {
+        		output_file_name[pos] = argv[i+1][pos];
+        	}
+        	output_file_name[pos] = '\0';
+        	oFlag = 1;
+        	i++; 
+        	break;
+        case 't':
+        	threshold_value = (float) atof(argv[i+1]); 
+        	tFlag = 1;
+        	i++; 
+        	break;
+        case 'h':
+        	hFlag = 1;
+        	break;
+        default:
+        	printf("Invalid option -%c.\n", argv[i][1]);
+        	exit(-1);
+        }
+    }   
 
-	FILE *input_image;
-	input_image = fopen("cup.bmp", "rb"); 
-	if (input_image == NULL) {
-		printf("Cannot open the image file.\n");
-		exit(-1);
+	if (hFlag) {
+		printf("\n");
+		getUsageMessage();
+	} else {
+		input_image = fopen(argv[argc - 1], "rb"); 
+		if (input_image == NULL) {
+			printf("Cannot open the image file.\n");
+			exit(-1);
+		}
+
+		getImageSize(input_image);
+		rewind(input_image);
+
+		if (tFlag) {
+			if (oFlag) {
+				applyThresfoldFilter(input_image, threshold_value, output_file_name);
+			} else {
+				applyThresfoldFilter(input_image, threshold_value, "out.bmp");
+			}
+			rewind(input_image);
+		}
+		fclose(input_image);
 	}
-
-	getImageSize(input_image);
-	rewind(input_image);
-
-	char output[] = "out.bmp";
-	applyThresfoldFilter(input_image, 0.5, output);
-	rewind(input_image);
-
-	fclose(input_image);
-
-	getUsageMessage();
 	return 0;
 }
 
@@ -43,8 +81,6 @@ void getImageSize(FILE *image_file) {
 
 	while (1) {
 		byte = fgetc(image_file);
-		// if (byte == EOF)
-		// 	break;
 		counter++;
 		if (counter > 18 && counter < 23) {
 			width[counter - 19] = byte;
