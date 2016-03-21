@@ -4,13 +4,16 @@
 
 void getImageSize(FILE *image_file);
 void applyThresfoldFilter(FILE *image_file, float threshold_value, char output_file_name[]);
+void cropIamge(FILE *image_file, int xPos, int yPos, int width, int height, char output_file_name[]);
 void getUsageMessage();
+int * intToBytes(int number);
 int power(int base, int exponent);
 
 int image_width = 0;
 int image_height = 0;
 int oFlag = 0;
 int tFlag = 0;
+int cFlag = 0;
 int hFlag = 0;
 
 
@@ -21,6 +24,8 @@ int main(int argc, char *argv[]) {
 	char output_file_name[1000];
 	float threshold_value;
 	FILE *input_image;
+
+	int originX, originY, outWidth, outHeight;
 
 	//parse the main arguments and call related functions.
 	for (i = 1; i < argc && argv[i][0] == '-'; i++) {
@@ -40,6 +45,14 @@ int main(int argc, char *argv[]) {
         	break;
         case 'h':
         	hFlag = 1;
+        	break;
+        case 'c':
+        	cFlag = 1;
+        	originX = (int) atoi(argv[i+1]);
+        	originY = (int) atoi(argv[i+2]);
+        	outWidth = (int) atoi(argv[i+3]);
+        	outHeight = (int) atoi(argv[i+4]);
+        	i += 4;
         	break;
         default:
         	printf("Invalid option -%c.\n", argv[i][1]);
@@ -65,6 +78,15 @@ int main(int argc, char *argv[]) {
 				applyThresfoldFilter(input_image, threshold_value, output_file_name);
 			} else {
 				applyThresfoldFilter(input_image, threshold_value, "out.bmp");
+			}
+			rewind(input_image);
+		}
+
+		if (cFlag) {
+			if (oFlag) {
+				cropIamge(input_image, originX, originY, outWidth, outHeight, output_file_name);
+			} else {
+				cropIamge(input_image, originX, originY, outWidth, outHeight, "out.bmp");
 			}
 			rewind(input_image);
 		}
@@ -116,6 +138,7 @@ void applyThresfoldFilter(FILE *image_file, float threshold_value, char output_f
 			// fputc(byte, output_image); 
 			break;
 		}
+
 		if (counter >= 54 && ((counter - 54) % row_length) < 3 * image_width) {
 			blue = byte;
 			green = fgetc(image_file);
@@ -149,6 +172,90 @@ void applyThresfoldFilter(FILE *image_file, float threshold_value, char output_f
 	return;
 }
 
+void cropIamge(FILE *image_file, int xPos, int yPos, int width, int height, char output_file_name[]){
+	if (xPos + width > image_width || yPos + height > image_height || xPos < 0 || yPos < 0 || width <= 0 || height <= 0) {
+		printf("The size of the output image is out of the original image.\n");
+		exit(-1);
+	}
+
+	int byte;
+	int i;
+	int counter = 0;
+	int output_image_pos;
+	int padding_size = (4 - ((image_width * 3) % 4)) % 4;
+	int row_length = image_width * 3 + padding_size;
+	int output_padding_size = (4 - ((width * 3) % 4)) % 4;
+	int output_row_length = width * 3 + output_padding_size;
+	FILE *output_image;
+	output_image = fopen(output_file_name, "wb");
+
+	while(1) {
+		byte = fgetc(image_file);
+		output_image_pos = ftell(output_image);
+		if (counter >= 54 && (output_image_pos - 54) % output_row_length == 3 * width) {
+			for(i = 0; i < output_padding_size; i++) {
+				fputc(0, output_image);
+			}
+		}
+
+		if (byte == EOF){
+			// fputc(byte, output_image); 
+			break;
+		}
+
+		if (counter == 2) {
+			int size_of_output_file = 54 + output_row_length * height;
+			int *size_in_byte = intToBytes(size_of_output_file);
+
+			for (i = 0; i < 4; i++) {
+				fputc(* (size_in_byte + i), output_image);
+			}
+
+			counter += 4;
+			fseek(image_file, 3, SEEK_CUR);
+
+		} else if (counter == 18) {
+			int *width_in_byte = intToBytes(width);
+			for (i = 0; i < 4; i++) {
+				fputc(* (width_in_byte + i), output_image);
+			}
+			int *height_in_byte = intToBytes(height);
+			for (i = 0; i < 4; i++) {
+				fputc(* (height_in_byte + i), output_image);
+			}
+
+			counter += 8;
+			fseek(image_file, 7, SEEK_CUR);
+
+		} else if (counter == 34) {
+			int *color_array_size_in_byte = intToBytes(output_row_length * height);
+
+			for (i = 0; i < 4; i++) {
+				fputc(* (color_array_size_in_byte + i), output_image);
+			}
+
+			counter += 4;
+			fseek(image_file, 3, SEEK_CUR);
+
+		} else if (counter >= 54) {
+			int currentX = ((counter - 54) % row_length) / 3;
+			int currentY = (counter - 54) / row_length;
+
+			if (currentX >= xPos && currentX < xPos + width && currentY >= yPos && currentY < yPos + height) {
+				fputc(byte, output_image);
+			}
+			counter++;
+		} else {
+			counter++;
+		    fputc(byte, output_image);
+		}
+
+	}
+
+	fclose(output_image);
+	return;
+}
+
 void getUsageMessage() {
 	printf("Usage: bmpedit [OPTIONS...] [input.bmp]\n");
 	printf("\n");
@@ -162,6 +269,21 @@ void getUsageMessage() {
 		"  -o FILE      Sets the output file for modified images (default output file is \"out.bmp\").\n"
 		"  -t 0.0-1.0   Apply a threshold filter to the image with a threshold the threshold value given.\n"
 		"  -h           Displays this usage message.\n");
+}
+
+int * intToBytes(int number) {
+	static int rst[4];
+
+	rst[3] = number / power(16,6);
+	number -= rst[3] * power(16,6);
+	rst[2] = number / power(16,4);
+	number -= rst[2] * power(16,4);
+	rst[1] = number / power(16,2);
+	number -= rst[1] * power(16,2);
+	rst[0] = number;
+
+	return rst;
+
 }
 
 int power(int base, int exponent) {
