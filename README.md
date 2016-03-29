@@ -24,11 +24,11 @@ OR
 
 (The order of the list corresponds to the summary of functionalities)  
 * $ ./bmpedit -h  
-* $ ./bmpedit [file] 
+* $ ./bmpedit [file]  
     e.g. $ ./bmpedit cup.bmp  
-* $ ./bmpedit -t [thredhold value] -o [output_file] 
+* $ ./bmpedit -t [thredhold value] -o [output_file]   
     e.g. $ ./bmpedit -t 0.5 -o cupth.bmp OR $ ./bmpedit -t 0.5 (by default output file is out.bmp)  
-* $ ./bmpedit -c [originX] [originY] [width] [height] -o [output_file] 
+* $ ./bmpedit -c [originX] [originY] [width] [height] -o [output_file]    
     e.g. $ ./bmpedit -c 100 100 100 100 -o crop.bmp OR $ ./bmpedit -c 100 100 100 100 (by default output file is out.bmp)  
 
 
