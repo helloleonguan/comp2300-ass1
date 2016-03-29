@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-
+/*
+Signatures for all functions used in this program. 
+*/
 void getImageSize(FILE *image_file);
 void applyThresfoldFilter(FILE *image_file, float threshold_value, char output_file_name[]);
 void cropIamge(FILE *image_file, int xPos, int yPos, int width, int height, char output_file_name[]);
@@ -9,6 +11,9 @@ void getUsageMessage();
 int * intToBytes(int number);
 int power(int base, int exponent);
 
+/*
+Global variables declaration. 
+*/
 int image_width = 0;
 int image_height = 0;
 int oFlag = 0;
@@ -16,9 +21,11 @@ int tFlag = 0;
 int cFlag = 0;
 int hFlag = 0;
 
-
+/*
+The main function simply takes in all the arguments, parses them and perfroms relative oprations on the image file. 
+*/
 int main(int argc, char *argv[]) {
-	/* code */
+	
 	int i;
 	int pos;
 	char output_file_name[1000];
@@ -60,6 +67,7 @@ int main(int argc, char *argv[]) {
         }
     }   
 
+    //Show the help message OR perform operations on the image.
 	if (hFlag) {
 		printf("\n");
 		getUsageMessage();
@@ -95,12 +103,17 @@ int main(int argc, char *argv[]) {
 	return 0;
 }
 
+/*
+The function takes in the original image file and extracts the width and height of the file. 
+It prints them of onto the console. 
+*/
 void getImageSize(FILE *image_file) {
 	int byte;
 	int counter = 0;
 	int width[4];
 	int height[4];
 
+	// Get the values from the file. 
 	while (1) {
 		byte = fgetc(image_file);
 		counter++;
@@ -114,6 +127,7 @@ void getImageSize(FILE *image_file) {
 			break;
 	}
 
+	// Convert them to decimal values.
 	image_width = width[0] + width[1]*power(16,2) + width[2]*power(16,4) + width[3]*power(16,6);
 	image_height = height[0] + height[1]*power(16,2) + height[2]*power(16,4) + height[3]*power(16,6);
 
@@ -123,11 +137,16 @@ void getImageSize(FILE *image_file) {
 	return;
 }
 
+/*
+The function takes in the original image file, a thredhold value and the output file name 
+	to apply a threshold filter.
+It outputs an image file. 
+*/
 void applyThresfoldFilter(FILE *image_file, float threshold_value, char output_file_name[]){
 	int byte;
 	int red, green, blue;
 	int counter = 0;
-	int padding_size = (4 - ((image_width * 3) % 4)) % 4;
+	int padding_size = (4 - ((image_width * 3) % 4)) % 4; // computing the size of padding
 	int row_length = image_width * 3 + padding_size ;
 	FILE *output_image;
 	output_image = fopen(output_file_name, "wb");
@@ -135,10 +154,10 @@ void applyThresfoldFilter(FILE *image_file, float threshold_value, char output_f
 	while(1){
 		byte = fgetc(image_file);
 		if (byte == EOF){
-			// fputc(byte, output_image); 
 			break;
 		}
 
+		// apply the threshold filter to RGB values and copy over the rest of the file. 
 		if (counter >= 54 && ((counter - 54) % row_length) < 3 * image_width) {
 			blue = byte;
 			green = fgetc(image_file);
@@ -172,7 +191,13 @@ void applyThresfoldFilter(FILE *image_file, float threshold_value, char output_f
 	return;
 }
 
+/*
+The function takes in the original image file, 4 parameters and output file name 
+	to crop the image based on those 4 values (in number of pixels).
+It outputs an image file. 
+*/
 void cropIamge(FILE *image_file, int xPos, int yPos, int width, int height, char output_file_name[]){
+	// Check whether the requested output image is out of the original size. 
 	if (xPos + width > image_width || yPos + height > image_height || xPos < 0 || yPos < 0 || width <= 0 || height <= 0) {
 		printf("The size of the output image is out of the original image.\n");
 		exit(-1);
@@ -182,13 +207,14 @@ void cropIamge(FILE *image_file, int xPos, int yPos, int width, int height, char
 	int i;
 	int counter = 0;
 	int output_image_pos;
-	int padding_size = (4 - ((image_width * 3) % 4)) % 4;
+	int padding_size = (4 - ((image_width * 3) % 4)) % 4; // computing the size of padding for the original image.
 	int row_length = image_width * 3 + padding_size;
-	int output_padding_size = (4 - ((width * 3) % 4)) % 4;
+	int output_padding_size = (4 - ((width * 3) % 4)) % 4; // computing the size of padding for the output image. 
 	int output_row_length = width * 3 + output_padding_size;
 	FILE *output_image;
 	output_image = fopen(output_file_name, "wb");
 
+	// Change the size of the image in the header of the file and copy over the RGB values in the requested area.
 	while(1) {
 		byte = fgetc(image_file);
 		output_image_pos = ftell(output_image);
@@ -199,10 +225,10 @@ void cropIamge(FILE *image_file, int xPos, int yPos, int width, int height, char
 		}
 
 		if (byte == EOF){
-			// fputc(byte, output_image); 
 			break;
 		}
 
+		// Change the size of the BMP file.
 		if (counter == 2) {
 			int size_of_output_file = 54 + output_row_length * height;
 			int *size_in_byte = intToBytes(size_of_output_file);
@@ -214,6 +240,7 @@ void cropIamge(FILE *image_file, int xPos, int yPos, int width, int height, char
 			counter += 4;
 			fseek(image_file, 3, SEEK_CUR);
 
+			// Change the values for the width and the height of the image in pixels. 
 		} else if (counter == 18) {
 			int *width_in_byte = intToBytes(width);
 			for (i = 0; i < 4; i++) {
@@ -227,6 +254,7 @@ void cropIamge(FILE *image_file, int xPos, int yPos, int width, int height, char
 			counter += 8;
 			fseek(image_file, 7, SEEK_CUR);
 
+			// Chnage the size of the raw bitmap data (including padding). 
 		} else if (counter == 34) {
 			int *color_array_size_in_byte = intToBytes(output_row_length * height);
 
@@ -237,6 +265,7 @@ void cropIamge(FILE *image_file, int xPos, int yPos, int width, int height, char
 			counter += 4;
 			fseek(image_file, 3, SEEK_CUR);
 
+			// Copy over the RGB values in the requested area (including padding). 
 		} else if (counter >= 54) {
 			int currentX = ((counter - 54) % row_length) / 3;
 			int currentY = (counter - 54) / row_length;
@@ -256,6 +285,9 @@ void cropIamge(FILE *image_file, int xPos, int yPos, int width, int height, char
 	return;
 }
 
+/*
+The function prints out the help message onto the console. 
+*/
 void getUsageMessage() {
 	printf("Usage: bmpedit [OPTIONS...] [input.bmp]\n");
 	printf("\n");
@@ -268,9 +300,14 @@ void getUsageMessage() {
 	printf("OPTIONS:\n"
 		"  -o FILE      Sets the output file for modified images (default output file is \"out.bmp\").\n"
 		"  -t 0.0-1.0   Apply a threshold filter to the image with a threshold the threshold value given.\n"
-		"  -h           Displays this usage message.\n");
+		"  -h           Displays this usage message.\n"
+		"  -c [originX] [originY] [width] [height]   Crop the image from the origin(left-bottom corner).\n");
 }
 
+/*
+This function converts an integer to 4 integers stading for the encoding of that integer in 4 bytes.
+It returns a pointer pointing to the head of the int array. 
+*/
 int * intToBytes(int number) {
 	static int rst[4];
 
@@ -286,6 +323,9 @@ int * intToBytes(int number) {
 
 }
 
+/*
+This function takes two integers (a, b) and return the result of a to the power of b. 
+*/
 int power(int base, int exponent) {
 	int i;
 	int rst = 1;
