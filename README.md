@@ -38,7 +38,7 @@ OR
 <img alt="Help msg" src="img/help.PNG" width="603" height="219">  
 
 #### 2. print out width and height  
-<img alt="size1" src="img/size1.PNG">
+<img alt="size1" src="img/size1.PNG">  
 __It is the actual size of ["water.bmp"](img/water.bmp).__    
   
 <img alt="size2" src="img/size2.PNG">  
@@ -64,7 +64,17 @@ __It is the actual size of ["cup.bmp"](cup.bmp).__
 
 
 ## What makes my extensions deserve a higher mark  
+* The extension part is neat and clean.   
+* I took a straightforward approach with an adequate amount of comments.   
+* It worked for different padding sizes.  
+* It throws error message if the input values are illegal.  
+
 
 ## Limitations and Improvements  
-
+* I used an int indicator to go through the image file. If the image file is bigger than the MAXIMUM value of an int, then my program might not work properly. Maybe I can dynamically allocate another int variable if the current one has reached its limit next time.  
+* I used high level abstractive functions like fwrite() and fopen(). Next time, I will try to use low level system calls like open() and write() to make the program more unix-based when handling files.  
+* I did not handle most of the user input errors in this program. I will definitely improve the error handling issue next time.  
+  
+   
+   
 
