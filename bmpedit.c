@@ -1,3 +1,10 @@
+/*
+Author: Liyang(Leon) Guan
+Uni ID: u5684206
+Declaration: The following program is all written by meself.
+*/
+
+
 #include <stdio.h>
 #include <stdlib.h>
 
